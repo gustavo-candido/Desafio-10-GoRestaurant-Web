@@ -49,15 +49,9 @@ const Dashboard: React.FC = () => {
     try {
       setIdCounter(idCounter + 1);
 
-      const addedFood = {
-        ...food,
-        available: true,
-        id: idCounter,
-      };
+      const addedFood = await api.post('/foods', food);
+      setFoods([...foods, addedFood.data]);
 
-      setFoods([...foods, addedFood]);
-
-      await api.post('/foods', addedFood);
     } catch (err) {
       console.log(err);
     }
@@ -66,7 +60,7 @@ const Dashboard: React.FC = () => {
   async function handleUpdateFood(
     food: Omit<IFoodPlate, 'id' | 'available'>,
   ): Promise<void> {
-    await api.patch(`/foods/${editingFood.id}`, { ...food });
+    await api.put<IFoodPlate>(`/foods/${editingFood.id}`, { ...food });
 
     const updatedFoods = foods.map(f => {
       if (f.id === editingFood.id) return { ...f, ...food };
