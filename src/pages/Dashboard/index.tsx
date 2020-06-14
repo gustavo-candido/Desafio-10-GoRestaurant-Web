@@ -25,9 +25,19 @@ const Dashboard: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
+  const [idCounter, setIdCounter] = useState(0);
+
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      // TODO LOAD FOODS
+      const response = await api.get<IFoodPlate[]>('/foods');
+
+      setFoods(response.data);
+
+      const maxId = response.data.reduce((acc, b) => {
+        return Math.max(acc, b.id);
+      }, 0);
+
+      setIdCounter(maxId);
     }
 
     loadFoods();
@@ -37,7 +47,17 @@ const Dashboard: React.FC = () => {
     food: Omit<IFoodPlate, 'id' | 'available'>,
   ): Promise<void> {
     try {
-      // TODO ADD A NEW FOOD PLATE TO THE API
+      setIdCounter(idCounter + 1);
+
+      const addedFood = {
+        ...food,
+        available: true,
+        id: idCounter,
+      };
+
+      setFoods([...foods, addedFood]);
+
+      await api.post('/foods', addedFood);
     } catch (err) {
       console.log(err);
     }
@@ -46,11 +66,25 @@ const Dashboard: React.FC = () => {
   async function handleUpdateFood(
     food: Omit<IFoodPlate, 'id' | 'available'>,
   ): Promise<void> {
-    // TODO UPDATE A FOOD PLATE ON THE API
+    await api.patch(`/foods/${editingFood.id}`, { ...food });
+
+    const updatedFoods = foods.map(f => {
+      if (f.id === editingFood.id) return { ...f, ...food };
+      return f;
+    });
+
+    setFoods(updatedFoods);
   }
 
   async function handleDeleteFood(id: number): Promise<void> {
-    // TODO DELETE A FOOD PLATE FROM THE API
+    const deletedFood = foods.find(food => food.id === id);
+
+    if (!deletedFood) return;
+
+    await api.delete(`/foods/${deletedFood.id}`);
+
+    const remainFoods = foods.filter(food => food.id !== id);
+    setFoods(remainFoods);
   }
 
   function toggleModal(): void {
@@ -62,7 +96,8 @@ const Dashboard: React.FC = () => {
   }
 
   function handleEditFood(food: IFoodPlate): void {
-    // TODO SET THE CURRENT EDITING FOOD ID IN THE STATE
+    setEditingFood(food);
+    toggleEditModal();
   }
 
   return (
